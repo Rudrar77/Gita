@@ -1,155 +1,346 @@
+/* Import fonts for Sanskrit and spiritual content */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Import fonts for Sanskrit and spiritual content */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
-
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 24.6 95% 53.1%;
-    --primary-foreground: 60 9.1% 97.8%;
-
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24 9.8% 10%;
-
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
-
-    --accent: 60 4.8% 95.9%;
-    --accent-foreground: 24 9.8% 10%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
-
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --ring: 24.6 95% 53.1%;
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 20 14.3% 4.1%;
-    --foreground: 60 9.1% 97.8%;
-
-    --card: 20 14.3% 4.1%;
-    --card-foreground: 60 9.1% 97.8%;
-
-    --popover: 20 14.3% 4.1%;
-    --popover-foreground: 60 9.1% 97.8%;
-
-    --primary: 20.5 90.2% 48.2%;
-    --primary-foreground: 60 9.1% 97.8%;
-
-    --secondary: 12 6.5% 15.1%;
-    --secondary-foreground: 60 9.1% 97.8%;
-
-    --muted: 12 6.5% 15.1%;
-    --muted-foreground: 24 5.4% 63.9%;
-
-    --accent: 12 6.5% 15.1%;
-    --accent-foreground: 60 9.1% 97.8%;
-
-    --destructive: 0 72.2% 50.6%;
-    --destructive-foreground: 60 9.1% 97.8%;
-
-    --border: 12 6.5% 15.1%;
-    --input: 12 6.5% 15.1%;
-    --ring: 20.5 90.2% 48.2%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+html, body {
+  background: #fff !important;
 }
 
+/* Mobile-first base styles */
 @layer base {
   * {
-    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow text selection for content areas */
+  .verse-content, .meaning-text, .search-input, textarea, input {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  html {
+    font-family: system-ui, sans-serif;
+    background: #fff;
+    background-size: 224px;
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 
-  /* Sanskrit text styling */
-  .sanskrit-text {
-    font-family: 'Noto Sans Devanagari', sans-serif;
-    font-weight: 500;
-    line-height: 1.8;
-    letter-spacing: 0.02em;
-  }
-
-  /* English text styling for spiritual content */
-  .spiritual-text {
-    font-family: 'Crimson Text', Georgia, serif;
-    line-height: 1.7;
-  }
-
-  /* Smooth scrolling */
-  html {
-    scroll-behavior: smooth;
-  }
-
-  /* Custom scrollbar for webkit browsers */
-  ::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #c2410c;
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #9a3412;
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+      monospace;
   }
 }
 
+/* Mobile-specific utility classes */
 @layer components {
-  /* Gradient text utility */
-  .gradient-text-orange {
-    @apply bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent;
+  /* Mobile-safe area handling */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
   }
 
-  /* Spiritual card hover effects */
-  .spiritual-card {
-    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Om symbol animation */
-  .om-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  /* Touch-friendly button sizes */
+  .touch-button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    outline: none;
+  }
+
+  .touch-button:active {
+    transform: scale(0.95);
+  }
+
+  /* Mobile content wrapper */
+  .mobile-content {
+    padding-bottom: 80px; /* Space for bottom navigation */
+  }
+
+  /* Mobile padding utilities */
+  .mobile-px {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .mobile-py {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  /* Mobile text sizes */
+  .mobile-text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  .mobile-text-xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .mobile-text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  /* Mobile card styles */
+  .mobile-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Mobile verse card styles */
+  .mobile-verse {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    backdrop-filter: blur(15px);
+  }
+
+  /* Mobile search input */
+  .mobile-search {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-search:focus {
+    outline: none;
+    border-color: rgba(251, 191, 36, 0.6);
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+  }
+
+  /* Mobile progress bar */
+  .mobile-progress {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(251, 191, 36, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .mobile-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  /* Mobile achievement card */
+  .mobile-achievement {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1px solid #f59e0b;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    color: #92400e;
+    font-weight: 500;
+  }
+
+  /* Mobile navigation - force remove border and shadow */
+  .mobile-nav, .mobile-nav * {
+    border-top: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    background-clip: padding-box;
+  }
+
+  /* 3D card flip styles */
+  .perspective {
+    perspective: 1000px;
+  }
+
+  .transform-style-preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  /* Sanskrit font */
+  .font-sanskrit {
+    font-family: 'Noto Sans Devanagari', 'Arial Unicode MS', sans-serif;
+  }
+
+  /* Custom scrollbar for mobile */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(251, 191, 36, 0.1);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(251, 191, 36, 0.5);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(251, 191, 36, 0.7);
+  }
+
+  /* Dark mode support */
+  .dark {
+    background: #1a1a1a;
+    color: #ffffff;
+  }
+
+  .dark .mobile-card,
+  .dark .mobile-verse {
+    background: rgba(30, 30, 30, 0.9);
+    border-color: rgba(251, 191, 36, 0.2);
+  }
+
+  .dark .mobile-nav {
+    background: rgba(30, 30, 30, 0.95);
+    border-top-color: rgba(251, 191, 36, 0.2);
+  }
+
+  /* Animation classes */
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Haptic feedback simulation for web */
+  @media (hover: hover) {
+    .touch-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  /* Focus styles for accessibility */
+  .touch-button:focus-visible {
+    outline: 2px solid #f59e0b;
+    outline-offset: 2px;
+  }
+
+  /* Loading states */
+  .loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* Error states */
+  .error {
+    border-color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.1) !important;
+  }
+
+  /* Success states */
+  .success {
+    border-color: #10b981 !important;
+    background-color: rgba(16, 185, 129, 0.1) !important;
+  }
+}
+
+.icon-button {
+  background: #fff;
+  border: 2px solid #f3f3f3;
+  border-radius: 50%;
+  padding: 10px;
+  transition: box-shadow 0.15s, border-color 0.15s, background 0.15s;
+  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button:hover, .icon-button:focus-visible {
+  background: #fff7ed; /* subtle orange tint */
+  border-color: #fdba74; /* orange-300 */
+  box-shadow: 0 4px 16px rgba(251, 146, 60, 0.10);
+}
+
+.icon-button .icon {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+/* Responsive design */
+@layer utilities {
+  /* Small screens */
+  @media (max-width: 640px) {
+    .mobile-px {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+    
+    .mobile-py {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+  }
+
+  /* Medium screens */
+  @media (min-width: 768px) {
+    .mobile-px {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+    
+    .mobile-py {
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+  }
+
+  /* Large screens */
+  @media (min-width: 1024px) {
+    .mobile-px {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+    
+    .mobile-py {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
   }
 }

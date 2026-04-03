@@ -1,28 +1,38 @@
-
-import { Search, BookOpen, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BookOpen, Menu, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const Header = () => {
+  const navigate = useNavigate();
+  const t = useTranslation();
+
   return (
-    <header className="bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-200 px-4 py-3">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-full flex items-center justify-center">
-            <BookOpen className="w-6 h-6 text-white" />
+    <header className="bg-gradient-to-r from-orange-100 via-amber-200 to-yellow-100 shadow-lg border-b border-orange-200 safe-area-top">
+      <div className="mobile-px mobile-py">
+        <div className="flex items-center justify-between">
+          {/* Logo and Title */}
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-yellow-300 shadow-lg flex items-center justify-center">
+              <BookOpen className="w-7 h-7 text-white drop-shadow" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="mobile-text-xl font-extrabold text-orange-900 tracking-tight drop-shadow-lg" style={{ fontFamily: 'serif' }}>
+                श्रीमद्भगवद्गीता
+              </h1>
+              <div className="text-xs text-orange-700 font-medium tracking-wide">
+                जीवन का दिव्य मार्गदर्शन
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-orange-900">Dharma Gita</h1>
-            <p className="text-sm text-orange-700">Wisdom of the Ages</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" className="text-orange-700 hover:text-orange-900">
-            <Search className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="text-orange-700 hover:text-orange-900">
-            <User className="w-4 h-4" />
-          </Button>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => navigate('/settings')}
+            className="touch-button bg-orange-100 text-orange-700 rounded-full p-2 shadow-md"
+            title={t('settings')}
+          >
+            <Settings className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </header>
