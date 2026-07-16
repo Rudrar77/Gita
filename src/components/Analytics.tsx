@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { userDataAPI } from '@/lib/api';
+import { useAuth } from '@/hooks/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   TrendingUp, 
@@ -58,85 +59,98 @@ const Analytics = () => {
     weeklyChallenges: []
   });
 
-  // Load data from localStorage
+  const { isAuthenticated } = useAuth();
+
+  // Load data from API
   useEffect(() => {
-    const loadAnalyticsData = () => {
-      // Load read verses
-      const readVerses = JSON.parse(localStorage.getItem('readVerses') || '[]');
-      
-      // Load mood history
-      const moodHistory = JSON.parse(localStorage.getItem('moodHistory') || '[]');
-      
-      // Load journal entries
-      const journalEntries = JSON.parse(localStorage.getItem('journalHistory') || '[]');
-      
-      // Load chapter progress
-      const chapterProgress = JSON.parse(localStorage.getItem('chapterProgress') || '{}');
-      
-      // Load weekly challenges
-      const weeklyChallenges = JSON.parse(localStorage.getItem('weeklyChallenges') || '[]');
-      
-      // Load learning sessions
-      const learningSessions = JSON.parse(localStorage.getItem('learningSessions') || '[]');
+    const loadAnalyticsData = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const userData = await userDataAPI.getAll();
 
-      // Calculate total learning time
-      const totalLearningTime = learningSessions.reduce((acc: number, session: any) => {
-        if (session.endTime) {
-          return acc + (new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / (1000 * 60);
-        }
-        return acc;
-      }, 0);
-
-      // Calculate completed chapters
-      const completedChapters = Object.values(chapterProgress).filter((chapter: any) => chapter.completed).length;
-
-      // Calculate streaks
-      const dates = readVerses.map((verseId: string) => {
-        const verse = JSON.parse(localStorage.getItem(`verse_${verseId}`) || '{}');
-        return verse.readDate;
-      }).filter(Boolean).sort();
-
-      let currentStreak = 0;
-      let longestStreak = 0;
-      let tempStreak = 0;
-      const today = new Date().toISOString().split('T')[0];
-
-      for (let i = 0; i < dates.length; i++) {
-        const date = dates[i];
-        const nextDate = dates[i + 1];
+        // Load read verses
+        const readVerses = userData.readVerses || [];
         
-        if (nextDate) {
-          const currentDate = new Date(date);
-          const nextDateObj = new Date(nextDate);
-          const diffDays = (nextDateObj.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24);
+        // Load mood history
+        const moodHistory = userData.moodHistory || [];
+        
+        // Load journal entries
+        const journalEntries = userData.journalHistory || [];
+        
+        // Load chapter progress
+        const chapterProgress = userData.chapterProgress || {};
+        
+        // Load weekly challenges
+        const weeklyChallenges = userData.weeklyChallenges || [];
+        
+        // Load learning sessions
+        const learningSessions = userData.learningSessions || [];
+
+        // Calculate total learning time
+        const totalLearningTime = learningSessions.reduce((acc: number, session: any) => {
+          if (session.endTime) {
+            return acc + (new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / (1000 * 60);
+          }
+          return acc;
+        }, 0);
+
+        // Calculate completed chapters
+        const completedChapters = Object.values(chapterProgress).filter((chapter: any) => chapter.completed).length;
+
+        // Simplified streak calculation based on learning sessions
+        const dates = learningSessions
+          .map((session: any) => new Date(session.startTime).toISOString().split('T')[0])
+          .filter((value: any, index: any, self: any) => self.indexOf(value) === index)
+          .sort();
+
+        let currentStreak = 0;
+        let longestStreak = 0;
+        let tempStreak = 1;
+
+        if (dates.length > 0) {
+          for (let i = 0; i < dates.length - 1; i++) {
+            const currentDate = new Date(dates[i]);
+            const nextDate = new Date(dates[i + 1]);
+            const diffDays = (nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24);
+            
+            if (diffDays <= 1) {
+              tempStreak++;
+            } else {
+              longestStreak = Math.max(longestStreak, tempStreak);
+              tempStreak = 1;
+            }
+          }
+          longestStreak = Math.max(longestStreak, tempStreak);
+          
+          // Check if current streak is still active (today or yesterday)
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          const lastDate = new Date(dates[dates.length - 1]);
+          const diffDays = (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
           
           if (diffDays <= 1) {
-            tempStreak++;
-          } else {
-            longestStreak = Math.max(longestStreak, tempStreak);
-            tempStreak = 0;
+            currentStreak = tempStreak;
           }
         }
-      }
-      
-      longestStreak = Math.max(longestStreak, tempStreak);
-      currentStreak = tempStreak;
 
-      setAnalyticsData({
-        totalVersesRead: readVerses.length,
-        totalChaptersCompleted: completedChapters,
-        totalLearningTime: Math.round(totalLearningTime),
-        currentStreak,
-        longestStreak,
-        moodHistory,
-        journalEntries,
-        chapterProgress,
-        weeklyChallenges
-      });
+        setAnalyticsData({
+          totalVersesRead: readVerses.length,
+          totalChaptersCompleted: completedChapters,
+          totalLearningTime: Math.round(totalLearningTime),
+          currentStreak,
+          longestStreak,
+          moodHistory,
+          journalEntries,
+          chapterProgress,
+          weeklyChallenges
+        });
+      } catch (err) {
+        console.error("Failed to load analytics data", err);
+      }
     };
 
     loadAnalyticsData();
-  }, []);
+  }, [isAuthenticated]);
 
   // Prepare mood data for chart
   const moodData = analyticsData.moodHistory.reduce((acc: any, entry) => {

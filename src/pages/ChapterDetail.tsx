@@ -11,8 +11,9 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 // Import background image from data folder
 import { getChapterImage, getImageByIndex } from '@/utils/imageUtils';
 import { hapticFeedback, storage } from '@/utils/capacitorUtils';
-
-const LAST_READ_KEY = 'lastReadVerseByChapter';
+import { devotionalTts } from '@/utils/devotionalTts';
+import { userDataAPI } from '@/lib/api';
+import { useAuth } from '@/hooks/AuthContext';
 
 const ChapterDetail = () => {
   const { number } = useParams<{ number: string }>();
@@ -20,15 +21,20 @@ const ChapterDetail = () => {
   const [language] = useLanguage();
   const { readVerses, markAsRead, isRead } = useReadVerses();
   const { isBookmarked, addBookmark, removeBookmark } = useBookmarks();
-  const [currentIdx, setCurrentIdx] = useState(() => {
-    if (typeof window !== 'undefined' && number != null) {
-      const lastRead = JSON.parse(localStorage.getItem(LAST_READ_KEY) || '{}');
-      if (lastRead[number] != null && !isNaN(lastRead[number])) {
-        return lastRead[number];
-      }
+  const { isAuthenticated } = useAuth();
+  const [currentIdx, setCurrentIdx] = useState(0);
+  
+  // Load last read index from API
+  React.useEffect(() => {
+    if (isAuthenticated && number != null) {
+      userDataAPI.getAll().then(data => {
+        const lastRead = data.lastReadVerseByChapter || {};
+        if (lastRead[number] != null && !isNaN(lastRead[number])) {
+          setCurrentIdx(lastRead[number]);
+        }
+      }).catch(err => console.error("Error loading last read index:", err));
     }
-    return 0;
-  });
+  }, [isAuthenticated, number]);
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Get all verses for this chapter
@@ -41,12 +47,14 @@ const ChapterDetail = () => {
 
   // Persist last read verse index on change
   React.useEffect(() => {
-    if (number != null) {
-      const lastRead = JSON.parse(localStorage.getItem(LAST_READ_KEY) || '{}');
-      lastRead[number] = currentIdx;
-      localStorage.setItem(LAST_READ_KEY, JSON.stringify(lastRead));
+    if (isAuthenticated && number != null) {
+      userDataAPI.getAll().then(data => {
+        const lastRead = data.lastReadVerseByChapter || {};
+        lastRead[number] = currentIdx;
+        userDataAPI.updateLastRead(lastRead).catch(err => console.error("Error saving last read:", err));
+      });
     }
-  }, [number, currentIdx]);
+  }, [number, currentIdx, isAuthenticated]);
 
   // Mark as read when verse is viewed
   React.useEffect(() => {
@@ -62,34 +70,43 @@ const ChapterDetail = () => {
     // eslint-disable-next-line
   }, [currentVerse?.ID]);
 
-  // TTS function
+  // Devotional TTS function for verse meaning
   const speakVerse = async () => {
     if (!currentVerse) return;
-    setIsPlaying(true);
     
-    // Only speak the meaning (Hindi or English), not Sanskrit
-    const text = language === 'hindi' ? currentVerse.HinMeaning : currentVerse.EngMeaning;
-    const lang = language === 'hindi' ? 'hi-IN' : 'en-US';
-    
-    if (Capacitor.getPlatform() === 'web') {
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utterance = new window.SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-        utterance.rate = 0.9;
-        window.speechSynthesis.speak(utterance);
-      }
+    if (isPlaying) {
+      // Stop current playback
+      devotionalTts.stop();
+      setIsPlaying(false);
     } else {
-      await TextToSpeech.speak({
-        text,
-        lang,
-        rate: 0.9,
-        pitch: 1.0,
-        volume: 1.0,
-      });
+      setIsPlaying(true);
+      
+      if (Capacitor.getPlatform() === 'web') {
+        // Use devotional TTS for web
+        const meaningLang = language === 'hindi' ? 'hindi' : 'english';
+        const text = language === 'hindi' ? currentVerse.HinMeaning : currentVerse.EngMeaning;
+        
+        await devotionalTts.speakMeaning(
+          text,
+          meaningLang,
+          () => setIsPlaying(false)
+        );
+      } else {
+        // Use native TTS for mobile
+        const text = language === 'hindi' ? currentVerse.HinMeaning : currentVerse.EngMeaning;
+        const lang = language === 'hindi' ? 'hi-IN' : 'en-US';
+        
+        await TextToSpeech.speak({
+          text,
+          lang,
+          rate: 0.8,
+          pitch: 1.0,
+          volume: 1.0,
+        });
+        
+        setTimeout(() => setIsPlaying(false), 3000);
+      }
     }
-    
-    setTimeout(() => setIsPlaying(false), 3000);
   };
 
   const handlePrev = () => {
@@ -116,22 +133,21 @@ const ChapterDetail = () => {
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Full Page Background Image */}
-      <div className="absolute inset-0 w-full h-full">
+      <div className="absolute inset-0 w-full h-full bg-orange-950">
+        <img 
+          src={getImageByIndex(currentIdx)} 
+          alt="" 
+          className="absolute inset-0 w-full h-full object-cover opacity-50 blur-xl scale-110"
+        />
         <img 
           src={getImageByIndex(currentIdx)} 
           alt="Krishna background" 
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
         />
       </div>
       
       {/* Header with semi-transparent background */}
-      <div className="relative z-20 flex items-center gap-3 p-4 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0">
-        <button
-          onClick={() => navigate(-1)}
-          className="icon-button text-orange-500 bg-white/90 rounded-full p-2 shadow-md"
-        >
-          <ChevronLeft className="icon" />
-        </button>
+      <div className="relative z-20 flex items-center justify-center p-4 bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 text-center">
         <div>
           <h2 className="mobile-text-xl font-bold text-orange-900 drop-shadow-lg">{chapterTitle}</h2>
           <div className="text-orange-700 text-sm drop-shadow">{verses.length} श्लोक</div>
@@ -164,16 +180,19 @@ const ChapterDetail = () => {
               <div className="flex gap-3 mt-2 justify-center">
                 <button
                   onClick={speakVerse}
-                  className="icon-button text-orange-500 bg-white/80 rounded-full p-3 shadow-md"
-                  disabled={isPlaying}
-                  title="Listen to this verse"
+                  className={`icon-button rounded-full p-3 shadow-md transition-all ${
+                    isPlaying 
+                      ? 'bg-orange-500 text-white animate-pulse' 
+                      : 'bg-white/80 text-orange-500 hover:bg-orange-100'
+                  }`}
+                  title={isPlaying ? 'Stop listening' : 'Listen to verse meaning'}
                 >
                   <Volume2 className="icon" />
                 </button>
                 <button
                   onClick={handlePrev}
                   disabled={currentIdx === 0}
-                  className="icon-button text-orange-500 bg-white/80 rounded-full p-3 shadow-md"
+                  className="icon-button text-orange-500 bg-white/80 rounded-full p-3 shadow-md disabled:opacity-50"
                   title="Previous verse"
                 >
                   <ChevronLeft className="icon" />
@@ -181,7 +200,7 @@ const ChapterDetail = () => {
                 <button
                   onClick={handleNext}
                   disabled={currentIdx === verses.length - 1}
-                  className="icon-button text-orange-500 bg-white/80 rounded-full p-3 shadow-md"
+                  className="icon-button text-orange-500 bg-white/80 rounded-full p-3 shadow-md disabled:opacity-50"
                   title="Next verse"
                 >
                   <ChevronRight className="icon" />

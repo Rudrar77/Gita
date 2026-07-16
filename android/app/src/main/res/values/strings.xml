@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Bhagwat Gita by RudraRathod</string>
-    <string name="title_activity_main">Bhagwat Gita by RudraRathod</string>
-    <string name="package_name">com.rudrarathod.bhagwatgita</string>
-    <string name="custom_url_scheme">com.rudrarathod.bhagwatgita</string>
-</resources>

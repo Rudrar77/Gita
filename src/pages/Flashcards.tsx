@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import gitaData from '@/data/Bhagwad_Gita.json';
 import Header from '@/components/Header';
+import { userDataAPI } from '@/lib/api';
+import { useAuth } from '@/hooks/AuthContext';
 import { 
   RefreshCw, 
   RotateCcw, 
@@ -31,20 +33,22 @@ function getRandomVerse(prevId = null) {
   return verse;
 }
 
-const FLASHCARDS_READ_KEY = 'flashcardsRead';
-
 const Flashcards = () => {
   const [verse, setVerse] = useState(() => getRandomVerse());
   const [flipped, setFlipped] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [cardCount, setCardCount] = useState(0);
-  const [readCardIds, setReadCardIds] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(FLASHCARDS_READ_KEY);
-      return stored ? JSON.parse(stored) : [];
+  const [readCardIds, setReadCardIds] = useState<string[]>([]);
+  const { isAuthenticated } = useAuth();
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      userDataAPI.getAll().then(data => {
+        if (data.flashcardsRead) setReadCardIds(data.flashcardsRead);
+      }).catch(err => console.error("Error loading flashcards read:", err));
     }
-    return [];
-  });
+  }, [isAuthenticated]);
+
   const navigate = useNavigate();
   const location = useLocation();
   const [language] = useLanguage();
@@ -73,7 +77,10 @@ const Flashcards = () => {
       setReadCardIds((prevIds) => {
         if (!prevIds.includes(next.ID)) {
           const updated = [...prevIds, next.ID];
-          localStorage.setItem(FLASHCARDS_READ_KEY, JSON.stringify(updated));
+          if (isAuthenticated) {
+            userDataAPI.updateFlashcardsRead(updated)
+              .catch(err => console.error("Error saving flashcards read:", err));
+          }
           return updated;
         }
         return prevIds;

@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Star, 
-  Calendar, 
   HelpCircle, 
   Layers 
 } from 'lucide-react';
@@ -22,7 +21,7 @@ const MobileNavigation = () => {
   ];
 
   return (
-    <nav className="mobile-nav fixed bottom-0 left-0 w-full z-50 safe-area-bottom shadow-none border-none bg-white" style={{borderTop: 'none', boxShadow: 'none'}}>
+    <nav className="mobile-nav fixed bottom-0 left-0 w-full z-50 safe-area-bottom bg-white/95 backdrop-blur-md md:hidden" style={{borderTop: 'none', boxShadow: 'none'}}>
       <div className="flex justify-around items-center py-1 px-1">
         {navItems.map(({ label, icon: Icon, path }) => {
           const isActive = location.pathname === path;
@@ -59,4 +58,4 @@ const MobileNavigation = () => {
   );
 };
 
-export default MobileNavigation; 
+export default MobileNavigation;

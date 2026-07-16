@@ -25,6 +25,8 @@ import { useLanguage, AppLanguage } from '@/hooks/useLanguage';
 import { useTranslation } from '@/hooks/useTranslation';
 import MobileNavigation from '@/components/MobileNavigation';
 import { notifications, hapticFeedback, storage } from '@/utils/capacitorUtils';
+import { userDataAPI } from '@/lib/api';
+import { useAuth } from '@/hooks/AuthContext';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -33,20 +35,30 @@ const Settings = () => {
   const [autoPlayEnabled, setAutoPlayEnabled] = useState(false);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
-  // Load settings from storage on mount
+  const { isAuthenticated } = useAuth();
+  // Load settings from storage and API on mount
   React.useEffect(() => {
     const loadSettings = async () => {
-      const notifEnabled = await storage.get('dailyVerseNotificationEnabled');
+      let notifEnabled = false;
+      if (isAuthenticated) {
+        try {
+          const data = await userDataAPI.getAll();
+          notifEnabled = !!data.dailyVerseNotificationEnabled;
+        } catch (e) {
+          console.error("Error loading notification settings", e);
+        }
+      }
+      
       const autoPlay = await storage.get('autoPlayEnabled');
       const darkMode = await storage.get('darkModeEnabled');
       
-      setNotificationsEnabled(notifEnabled || false);
+      setNotificationsEnabled(notifEnabled);
       setAutoPlayEnabled(autoPlay || false);
       setDarkModeEnabled(darkMode || false);
     };
     
     loadSettings();
-  }, []);
+  }, [isAuthenticated]);
   const [language, setLanguage] = useLanguage();
 
   const handleNotificationToggle = async () => {
@@ -57,7 +69,9 @@ const Settings = () => {
         if (hasPermission) {
           await notifications.scheduleDailyReminders();
           setNotificationsEnabled(true);
-          await storage.set('dailyVerseNotificationEnabled', true);
+          if (isAuthenticated) {
+            await userDataAPI.updateSettings({ dailyVerseNotificationEnabled: true }).catch(console.error);
+          }
         }
       } catch (error) {
         console.error('Notification permission denied');
@@ -65,7 +79,9 @@ const Settings = () => {
     } else {
       await notifications.cancelAll();
       setNotificationsEnabled(false);
-      await storage.set('dailyVerseNotificationEnabled', false);
+      if (isAuthenticated) {
+        await userDataAPI.updateSettings({ dailyVerseNotificationEnabled: false }).catch(console.error);
+      }
     }
   };
 
@@ -146,14 +162,7 @@ const Settings = () => {
       
       <main className="flex-1 mobile-px mobile-py">
         <div className="max-w-2xl mx-auto">
-        {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-          <button
-              onClick={() => navigate(-1)}
-              className="touch-button bg-orange-100 text-orange-700 rounded-full p-2"
-          >
-              <ChevronLeft className="w-5 h-5" />
-          </button>
+          <div className="flex items-center justify-center mb-6 text-center">
             <div>
               <h2 className="mobile-text-2xl font-bold text-orange-900">{t('settings')}</h2>
               <p className="text-orange-700">{t('configureYourPreferences')}</p>

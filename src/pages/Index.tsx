@@ -40,15 +40,9 @@ import html2canvas from 'html2canvas';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLanguage } from '@/hooks/useLanguage';
 
-const highlightText = (text, query) => {
-  if (!query) return text;
-  const regex = new RegExp(`(${query})`, 'gi');
-  return text.split(regex).map((part, i) =>
-    regex.test(part) ? <mark key={i} className="bg-yellow-200 text-orange-900 rounded px-1">{part}</mark> : part
-  );
-};
 
-const NOTIF_KEY = 'dailyVerseNotificationEnabled';
+import { userDataAPI } from '@/lib/api';
+import { useAuth } from '@/hooks/AuthContext';
 
 const scheduleDailyVerse = async () => {
   const idx = Math.floor(Math.random() * gitaData.length);
@@ -84,16 +78,22 @@ const Index = () => {
   const [showAchievement, setShowAchievement] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const [search, setSearch] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [notifEnabled, setNotifEnabled] = React.useState(() => {
-    return localStorage.getItem(NOTIF_KEY) === 'true';
-  });
+
+  const { isAuthenticated } = useAuth();
+  const [notifEnabled, setNotifEnabled] = React.useState(false);
+  
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      userDataAPI.getAll().then(data => {
+        if (data.dailyVerseNotificationEnabled !== undefined) {
+          setNotifEnabled(data.dailyVerseNotificationEnabled);
+        }
+      }).catch(err => console.error("Error loading notification settings:", err));
+    }
+  }, [isAuthenticated]);
   const [isSharing, setIsSharing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const cardRef = useRef(null);
-  const searchInputRef = useRef(null);
+
 
   // Get all verses for the selected chapter
   const verses = selectedChapter
@@ -169,32 +169,19 @@ const Index = () => {
     }
   };
 
-  useEffect(() => {
-    if (!search.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    const q = search.trim().toLowerCase();
-    const results = gitaData.filter(v =>
-      v.Shloka.toLowerCase().includes(q) ||
-      v.HinMeaning.toLowerCase().includes(q) ||
-      v.EngMeaning.toLowerCase().includes(q) ||
-      v.Chapter.toString() === q ||
-      v.Verse.toString() === q
-    );
-    setSearchResults(results);
-  }, [search]);
 
   React.useEffect(() => {
     if (notifEnabled) {
       LocalNotifications.requestPermissions();
       scheduleDailyVerse();
-      localStorage.setItem(NOTIF_KEY, 'true');
     } else {
       cancelDailyVerse();
-      localStorage.setItem(NOTIF_KEY, 'false');
     }
-  }, [notifEnabled]);
+    if (isAuthenticated) {
+      userDataAPI.updateSettings({ dailyVerseNotificationEnabled: notifEnabled })
+        .catch(err => console.error("Error saving notification settings:", err));
+    }
+  }, [notifEnabled, isAuthenticated]);
 
   const navItems = [
     { label: 'होम', icon: Home, path: '/' },
@@ -254,72 +241,6 @@ const Index = () => {
       {/* Mobile Status Bar */}
       {/* Removed mobile status bar here */}
 
-      {/* Mobile Search Bar */}
-      <div className="mobile-px mobile-py">
-        <div className="relative">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-orange-400" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder={t('searchPlaceholder')}
-                className="mobile-search w-full pl-10 pr-4 py-3 text-base border-0 focus:outline-none"
-              />
-            </div>
-            {search && (
-              <Button 
-                onClick={() => setSearch('')}
-                className="touch-button bg-orange-100 text-orange-700 hover:bg-orange-200"
-              >
-                ✕
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Search Results */}
-      {search && (
-        <div className="mobile-px space-y-4">
-          {searchResults.length === 0 ? (
-            <div className="mobile-card mobile-px mobile-py text-center text-orange-700">
-              <Search className="w-8 h-8 mx-auto mb-2 text-orange-400" />
-              <p className="mobile-text-lg">{t('noSearchResults')}</p>
-              <p className="text-sm text-orange-500">{t('tryDifferentWords')}</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {searchResults.slice(0, 10).map((v, i) => (
-                <div key={v.ID} className="mobile-search-result relative">
-                  <div className="flex justify-between items-start mb-3">
-                    <Badge className="bg-orange-100 text-orange-700">
-                      {(language === 'hindi' ? hindiChapterNames[v.Chapter] : englishChapterNames[v.Chapter])} {v.Verse}
-                    </Badge>
-                    <button
-                      onClick={() => isBookmarked(v.ID) ? removeBookmark(v.ID) : addBookmark(v.ID)}
-                      className={`mobile-bookmark ${isBookmarked(v.ID) ? 'active' : ''}`}
-                    >
-                      {isBookmarked(v.ID) ? '★' : '☆'}
-                    </button>
-                  </div>
-                  <div className="mobile-text-lg font-sanskrit text-gray-900 mb-3" style={{ whiteSpace: 'pre-line' }}>
-                    {highlightText(v.Shloka, search)}
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-3 text-gray-800 mobile-text-lg">
-                    {highlightText(language === 'hindi' ? v.HinMeaning : v.EngMeaning, search)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Main Content - Only show if not searching */}
-      {!search && (
         <div className="flex-1 mobile-px">
           {/* Overall Progress */}
           {/* Removed progress card here */}
@@ -336,13 +257,7 @@ const Index = () => {
             <div className="space-y-4">
               {/* Chapter Header */}
               <div className="mobile-card mobile-px mobile-py">
-                <div className="flex items-center justify-between mb-4">
-                  <button
-                    onClick={() => setSelectedChapter(null)}
-                    className="touch-button bg-orange-100 text-orange-700 rounded-full p-2"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
+                <div className="flex items-center justify-center mb-4">
                   <div className="text-center">
                     <h2 className="mobile-text-xl font-bold text-orange-900">
                       {(language === 'hindi' ? hindiChapterNames[selectedChapter] : englishChapterNames[selectedChapter])}
@@ -351,7 +266,6 @@ const Index = () => {
                       श्लोक {currentVerseIdx + 1} / {verses.length}
                     </p>
                   </div>
-                  <div className="w-10" /> {/* Spacer for centering */}
                 </div>
 
                 {/* Progress Bar */}
@@ -440,7 +354,6 @@ const Index = () => {
             </div>
           )}
         </div>
-      )}
     </div>
   );
 };

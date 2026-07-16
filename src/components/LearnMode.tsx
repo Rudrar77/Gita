@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { userDataAPI } from '@/lib/api';
+import { useAuth } from '@/hooks/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -52,45 +53,64 @@ const LearnMode = () => {
   const [showTransliteration, setShowTransliteration] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
   const [readingSpeed, setReadingSpeed] = useState(1.0);
+  const { isAuthenticated } = useAuth();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Initialize chapter progress
   useEffect(() => {
-    const savedProgress = localStorage.getItem('chapterProgress');
-    const savedSessions = localStorage.getItem('learningSessions');
-    
-    if (savedProgress) {
-      setChapterProgress(JSON.parse(savedProgress));
-    } else {
-      // Initialize progress for all chapters
-      const initialProgress: { [key: string]: ChapterProgress } = {};
-      gitaData.forEach(verse => {
-        if (!initialProgress[verse.Chapter]) {
-          initialProgress[verse.Chapter] = {
-            chapter: verse.Chapter,
-            totalVerses: 0,
-            readVerses: 0,
-            completed: false,
-            timeSpent: 0
-          };
+    if (isAuthenticated) {
+      userDataAPI.getAll().then(data => {
+        const savedProgress = data.chapterProgress;
+        const savedSessions = data.learningSessions;
+        
+        if (savedProgress && Object.keys(savedProgress).length > 0) {
+          setChapterProgress(savedProgress);
+        } else {
+          // Initialize progress for all chapters
+          const initialProgress: { [key: string]: ChapterProgress } = {};
+          gitaData.forEach(verse => {
+            if (!initialProgress[verse.Chapter]) {
+              initialProgress[verse.Chapter] = {
+                chapter: verse.Chapter,
+                totalVerses: 0,
+                readVerses: 0,
+                completed: false,
+                timeSpent: 0
+              };
+            }
+            initialProgress[verse.Chapter].totalVerses++;
+          });
+          setChapterProgress(initialProgress);
         }
-        initialProgress[verse.Chapter].totalVerses++;
-      });
-      setChapterProgress(initialProgress);
+
+        if (savedSessions && Array.isArray(savedSessions)) {
+          // Convert date strings back to Date objects
+          const parsedSessions = savedSessions.map((s: any) => ({
+            ...s,
+            startTime: new Date(s.startTime),
+            endTime: s.endTime ? new Date(s.endTime) : undefined
+          }));
+          setLearningSessions(parsedSessions);
+        }
+        setIsInitialLoad(false);
+      }).catch(err => console.error("Error loading learn mode data:", err));
     }
+  }, [isAuthenticated]);
 
-    if (savedSessions) {
-      setLearningSessions(JSON.parse(savedSessions));
+  // Save progress to API
+  useEffect(() => {
+    if (isAuthenticated && !isInitialLoad) {
+      userDataAPI.updateChapterProgress(chapterProgress)
+        .catch(err => console.error("Error saving chapter progress:", err));
     }
-  }, []);
-
-  // Save progress to localStorage
-  useEffect(() => {
-    localStorage.setItem('chapterProgress', JSON.stringify(chapterProgress));
-  }, [chapterProgress]);
+  }, [chapterProgress, isAuthenticated, isInitialLoad]);
 
   useEffect(() => {
-    localStorage.setItem('learningSessions', JSON.stringify(learningSessions));
-  }, [learningSessions]);
+    if (isAuthenticated && !isInitialLoad) {
+      userDataAPI.updateLearningSessions(learningSessions)
+        .catch(err => console.error("Error saving learning sessions:", err));
+    }
+  }, [learningSessions, isAuthenticated, isInitialLoad]);
 
   // Get verses for selected chapter
   const chapterVerses = selectedChapter 
