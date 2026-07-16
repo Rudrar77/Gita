@@ -10,7 +10,20 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'],
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:8080',
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ];
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    // Allow any Vercel deployment URL
+    if (origin.endsWith('.vercel.app') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
